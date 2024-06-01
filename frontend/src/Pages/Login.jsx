@@ -1,58 +1,63 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../Firebase/config';
+import { Link, useNavigate } from 'react-router-dom';
+import { getDoc, doc } from 'firebase/firestore';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log('Email:', email);
-    console.log('Password:', password);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      
+      // Verificar si el usuario está autenticado
+      const user = auth.currentUser;
+      if (user) {
+        // Recuperar el documento del usuario desde Firestore
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          // Obtener el nombre del usuario del documento
+          const userName = userDoc.data().name;
+          // Redirigir al usuario al chat con el nombre como parámetro
+          navigate(`/inicio?name=${encodeURIComponent(userName)}`);
+        } else {
+          console.error("Error logging in: User document does not exist");
+        }
+      } else {
+        console.error("Error logging in: User is not authenticated");
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-6 rounded shadow-md w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-gray-700">Email:</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded mt-1"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-gray-700">Password:</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full p-2 border border-gray-300 rounded mt-1"
-            />
-          </div>
-          <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-            Login
-          </button>
-          <p>
-            Si no tienes cuenta{' '}
-            <Link to="/register" className="underline text-blue500">
-              Register
-            </Link>
-          </p>
-        </form>
-      </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form className="bg-white p-6 rounded shadow-md w-full max-w-sm" onSubmit={handleLogin}>
+        <h1 className="text-2xl font-bold mb-4">Login</h1>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
+        />
+        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">Login</button>
+        <Link to="/register" className="block text-center mt-2 text-blue-500">Registrarse</Link>
+      </form>
     </div>
   );
 };
 
 export default Login;
-
-

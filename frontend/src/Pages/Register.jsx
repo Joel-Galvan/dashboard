@@ -1,36 +1,64 @@
-import { Link } from 'react-router-dom';
-export default function Register() {
+import { useState } from 'react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../Firebase/config'; 
+import { Link, useNavigate } from 'react-router-dom';
+import { setDoc, doc } from 'firebase/firestore'; // Asegúrate de importar las funciones necesarias de Firestore
+
+const Register = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const navigate = useNavigate();
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Guardar el nombre, correo electrónico y contraseña en Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        name: name,
+        email: email,
+        password: password, // Guardar la contraseña también
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error("Error registering:", error);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <div className="w-80 border border-gray-300 rounded-md p-4">
-        <h1 className="text-2xl font-bold mb-4">Crea una cuenta</h1>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <form className="bg-white p-6 rounded shadow-md w-full max-w-sm" onSubmit={handleRegister}>
+        <h1 className="text-2xl font-bold mb-4">Register</h1>
         <input
           type="text"
-          placeholder="Nombre de Usuario"
-          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
         />
         <input
           type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md"
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
         />
         <input
           type="password"
-          placeholder="Contraseña"
-          className="w-full px-4 py-2 mb-4 border border-gray-300 rounded-md"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="w-full p-2 mb-4 border border-gray-300 rounded"
         />
-        <button className="w-full px-4 py-2 mb-4 text-white bg-blue-500 rounded-md">
-          <Link to="/inicio" className="underline">
-            Regístrate
-          </Link>
-        </button>
-        <p>
-          Si ya tienes cuenta{' '}
-          <Link to="/" className="underline text-blue-500">
-            Inicia sesión
-          </Link>
-        </p>
-      </div>
+        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">Register</button>
+        <Link to="/" className="block text-center mt-2 text-blue-500">Login</Link>
+      </form>
     </div>
   );
-}
+};
+
+export default Register;
