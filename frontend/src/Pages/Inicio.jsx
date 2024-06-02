@@ -44,8 +44,9 @@ export default function Inicio() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer*/}
       <Footer />
+      
     </div>
   );
 }
