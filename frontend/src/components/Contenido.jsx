@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, List, ListItem } from '@tremor/react';
+import io from 'socket.io-client'; // Importamos la biblioteca de cliente Socket.IO
+
+const socket = io('/');
 
 export default function Contenido({userName}) {
     const [presupuesto, setPresupuesto] = useState('');
@@ -16,22 +19,30 @@ export default function Contenido({userName}) {
         setGasto(e.target.value);
     };
 
+    useEffect(() => {
+        // Escucha eventos del servidor para actualizar el total de presupuesto y gastos
+        socket.on('actualizarTransaccion', (transaccion) => {
+            setTransacciones([...transacciones, transaccion]);
+            if (transaccion.tipo === 'presupuesto') {
+                setTotalPresupuesto(totalPresupuesto + transaccion.cantidad);
+            } else if (transaccion.tipo === 'gasto') {
+                setTotalGastos(totalGastos + transaccion.cantidad);
+            }
+        });
+    }, [transacciones]);
+
     const handlePresupuestoSubmit = (e) => {
         e.preventDefault();
-        const nuevoTotalPresupuesto = totalPresupuesto + parseInt(presupuesto);
-        setTotalPresupuesto(nuevoTotalPresupuesto);
+        const nuevaTransaccion = { nombre: userName, cantidad: parseInt(presupuesto), tipo: 'presupuesto' };
+        socket.emit('actualizarTransaccion', nuevaTransaccion);
         setPresupuesto('');
-        const nuevaTransaccion = { nombre: 'Juan', cantidad: `+${presupuesto}` };
-        setTransacciones([...transacciones, nuevaTransaccion]);
     };
 
     const handleGastoSubmit = (e) => {
         e.preventDefault();
-        const nuevoTotalGastos = totalGastos + parseInt(gasto);
-        setTotalGastos(nuevoTotalGastos);
+        const nuevaTransaccion = { nombre: userName, cantidad: parseInt(gasto), tipo: 'gasto' };
+        socket.emit('actualizarTransaccion', nuevaTransaccion);
         setGasto('');
-        const nuevaTransaccion = { nombre: 'Juan', cantidad: `-${gasto}` };
-        setTransacciones([...transacciones, nuevaTransaccion]);
     };
 
     const presupuestoRestante = totalPresupuesto - totalGastos;
@@ -115,13 +126,13 @@ export default function Contenido({userName}) {
                 </div>
 
                 {/* Lista de Transacciones */}
-                <div className="max-w-md mt-8 overflow-y-auto max-h-80">
+                <div className="max-w-md mt-8 overflow-y-auto max-h-40">
                     <h2 className="text-xl font-bold mb-4">Lista de Transacciones</h2>
                     <List>
                         {transacciones.map((transaccion, index) => (
                             <ListItem key={index}>
                                 <span>{transaccion.nombre}</span>
-                                <span>{transaccion.cantidad}</span>
+                                <span>{transaccion.tipo === 'presupuesto' ? '+' : '-'}${transaccion.cantidad}</span>
                             </ListItem>
                         ))}
                     </List>

@@ -9,7 +9,9 @@ const io =  new SocketServer(server)
 io.on('connection', socket => {
     console.log(socket.id);
 
-
+    socket.on('actualizarTransaccion', (transaccion) => {
+        io.emit('actualizarTransaccion', transaccion);
+    });
 });
 
 server.listen(4000)
